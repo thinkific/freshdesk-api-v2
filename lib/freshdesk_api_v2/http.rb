@@ -1,12 +1,32 @@
 module FreshdeskApiV2
   class Http
-    PAGE_REGEX = /.*[\?\&]page=(\d)*.*/
-
     def initialize(configuration)
       @configuration = configuration
       @link_parser = Nitlink::Parser.new
     end
 
+    # Freshdesk's search API uses a different pagination mechanism than their
+    # regular pagination mechanism, so this implementation needs to be different.
+    def search_paginate(url, last_page, collection = [])
+      current_page = 1
+      page_count, items = do_search(url)
+      collection += items
+      return collection if page_count == 1
+      loop do
+        current_page += 1
+        # Freshdesk will only return up to a maximum of 10 pages, so
+        # kill the loop if we get that far OR if we hit the last requested page
+        break if current_page > Utils::MAX_SEARCH_PAGES || current_page > last_page
+        url.gsub!("?page=#{page - 1}", "?page=#{page}")
+        _, items = do_search(url)
+        collection += items
+        break if current_page > page_count
+      end
+      collection
+    end
+
+    # This is Freshdesk's normal pagination. It always returns a link to the next
+    # page in a header called 'link' with a rel of 'next'
     def paginate(url, last_page, collection = [])
       response = get(url)
       collection += JSON.parse(response.body)
@@ -50,6 +70,18 @@ module FreshdeskApiV2
     end
 
     private
+
+      def do_search(url)
+        response = get(url)
+        payload = JSON.parse(response.body)
+        total = (payload['total'] || 0).to_f
+        if total > Utils::MAX_SEARCH_RESULTS_PER_PAGE
+          page_count = (total / Utils::MAX_SEARCH_RESULTS_PER_PAGE).ceil
+        else
+          page_count = 1
+        end
+        [page_count, payload['results']]
+      end
 
       def next_page(url)
         url[PAGE_REGEX, 1]

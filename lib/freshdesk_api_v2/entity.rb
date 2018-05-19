@@ -1,16 +1,12 @@
 module FreshdeskApiV2
   class Entity
-    DEFAULT_PAGE = 1
-    MAX_PAGE_SIZE = 100
-    MAX_PAGE_SIZE_SEARCH = 30
-
     def initialize(http)
       @http = http
     end
 
     def list(options = {})
-      per_page = value_from_options(options, :per_page) || MAX_PAGE_SIZE
-      raise PaginationException, "Max per page is #{MAX_PAGE_SIZE}" if per_page.to_i > MAX_PAGE_SIZE
+      per_page = value_from_options(options, :per_page) || Utils::MAX_PAGE_SIZE
+      raise PaginationException, "Max per page is #{Utils::MAX_PAGE_SIZE}" if per_page.to_i > Utils::MAX_PAGE_SIZE
       first_page, last_page = extract_pagination(options)
       validate_pagination!(first_page, last_page)
       http_list(first_page, last_page, per_page)
@@ -19,11 +15,9 @@ module FreshdeskApiV2
     def search(query, options = {})
       query = (query || '').to_s.strip
       raise SearchException, 'You must provide a query expression' if query.length == 0
-      per_page = value_from_options(options, :per_page) || MAX_PAGE_SIZE_SEARCH
-      raise PaginationException, "Max per page is #{MAX_PAGE_SIZE_SEARCH}" if per_page.to_i > MAX_PAGE_SIZE_SEARCH
       first_page, last_page = extract_pagination(options)
       validate_pagination!(first_page, last_page)
-      http_search(query, first_page, last_page, per_page)
+      http_search(query, first_page, last_page)
     end
 
     def show(id)
@@ -62,7 +56,7 @@ module FreshdeskApiV2
 
       def validate_pagination!(first_page, last_page)
         raise PaginationException, 'first_page must be a number greater than 0' if first_page.to_i <= 0
-        raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i <= first_page.to_i
+        raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
       end
 
     private
@@ -93,16 +87,16 @@ module FreshdeskApiV2
       end
 
       # For example, see: https://developers.freshdesk.com/api/#filter_contacts
-      # TODO - The query functionality does not currently work
-      def http_search(query, first_page, last_page, per_page)
-        url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&per_page=#{per_page}&query=#{URI.encode(query)}"
-        @http.paginate(url, last_page)
+      def http_search(query, first_page, last_page)
+        encoded_query = '"' + URI.encode(query) + '"'
+        url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{encoded_query}"
+        @http.search_paginate(url, last_page)
       end
 
       def extract_pagination(options)
         first_page = value_from_options(options, :first_page)
         last_page = value_from_options(options, :last_page)
-        first_page ||= DEFAULT_PAGE
+        first_page ||= Utils::DEFAULT_PAGE
         last_page ||= Utils::INTEGER_MAX
         [first_page, last_page]
       end

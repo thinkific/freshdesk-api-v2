@@ -108,7 +108,77 @@ RSpec.describe FreshdeskApiV2::Entity do
     end
   end
 
-  context 'paginated calls' do
+  context 'search' do
+    let(:query) { '(active:true)' }
+    let(:mock_get_response) do
+      double('Mock Get Response',
+        body: { 'total' => 1, 'results' => [{ id: '1', name: 'Bob' }] }.to_json
+      )
+    end
+
+    before do
+      allow(mock_rest_client).to receive(:get).and_return(mock_get_response)
+    end
+
+    it 'raises an exception when not called with a query' do
+      expect do
+        subject.search(
+          '',
+          first_page: 1
+        )
+      end.to raise_error(FreshdeskApiV2::SearchException)
+    end
+
+    it 'raises an exception when called with a start_page of less than 0' do
+      expect do
+        subject.search(
+          query,
+          first_page: -1
+        )
+      end.to raise_error(FreshdeskApiV2::PaginationException)
+    end
+
+    it 'raises an exception when called with an last_page of less than start_page' do
+      expect do
+        subject.search(
+          query,
+          first_page: 2,
+          last_page: 1
+        )
+      end.to raise_error(FreshdeskApiV2::PaginationException)
+    end
+
+    it 'does not raise an exception when called with an last_page equal to start_page' do
+      expect do
+        subject.search(
+          query,
+          first_page: 2,
+          last_page: 2
+        )
+      end.not_to raise_error
+    end
+
+    it 'uses last_page as integer max if not specified' do
+      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="(active:true)"'
+      expect(@http).to receive(:search_paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
+      subject.search(
+        query,
+        first_page: 1
+      )
+    end
+
+    it 'uses last_page as specified' do
+      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="(active:true)"'
+      expect(@http).to receive(:search_paginate).with(url, 2)
+      subject.search(
+        query,
+        first_page: 1,
+        last_page: 2
+      )
+    end
+  end
+
+  context 'list' do
     let(:mock_get_response) { double('Mock Get Response', body: [{ id: 1, name: 'bob' }].to_json) }
     let(:mock_links) { double('Mock Links', by_rel: nil) }
 
@@ -117,138 +187,70 @@ RSpec.describe FreshdeskApiV2::Entity do
       allow_any_instance_of(Nitlink::Parser).to receive(:parse).and_return(mock_links)
     end
 
-    context 'search' do
-      let(:query) { '(active:true)' }
-
-      it 'raises an exception when not called with a query' do
-        expect do
-          subject.search(
-            '',
-            first_page: -1,
-            per_page: described_class::MAX_PAGE_SIZE_SEARCH
-          )
-        end.to raise_error(FreshdeskApiV2::SearchException)
-      end
-
-      it 'raises an exception when called with a start_page of less than 0' do
-        expect do
-          subject.search(
-            query,
-            first_page: -1,
-            per_page: described_class::MAX_PAGE_SIZE_SEARCH
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it 'raises an exception when called with an last_page of less than start_page' do
-        expect do
-          subject.search(
-            query,
-            first_page: 2,
-            last_page: 1,
-            per_page: described_class::MAX_PAGE_SIZE_SEARCH
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it "raises an exception when called with a per_page of greater than #{described_class::MAX_PAGE_SIZE_SEARCH}" do
-        expect do
-          subject.search(
-            query,
-            first_page: 1,
-            per_page: described_class::MAX_PAGE_SIZE_SEARCH + 1
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it 'uses last_page as integer max if not specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&per_page=30&query=(active:true)'
-        expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
-        subject.search(
-          query,
-          first_page: 1,
-          per_page: described_class::MAX_PAGE_SIZE_SEARCH
+    it 'raises an exception when called with a start_page of less than 0' do
+      expect do
+        subject.list(
+          first_page: -1,
+          per_page: 100
         )
-      end
-
-      it 'uses last_page as specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&per_page=30&query=(active:true)'
-        expect(@http).to receive(:paginate).with(url, 2)
-        subject.search(
-          query,
-          first_page: 1,
-          last_page: 2,
-          per_page: described_class::MAX_PAGE_SIZE_SEARCH
-        )
-      end
-
-      it 'constructs a url with per_page as specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&per_page=15&query=(active:true)'
-        expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
-        subject.search(
-          query,
-          first_page: 1,
-          per_page: 15
-        )
-      end
+      end.to raise_error(FreshdeskApiV2::PaginationException)
     end
 
-    context 'list' do
-      it 'raises an exception when called with a start_page of less than 0' do
-        expect do
-          subject.list(
-            first_page: -1,
-            per_page: 100
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it 'raises an exception when called with an last_page of less than start_page' do
-        expect do
-          subject.list(
-            first_page: 2,
-            last_page: 1,
-            per_page: described_class::MAX_PAGE_SIZE
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it "raises an exception when called with a per_page of greater than #{described_class::MAX_PAGE_SIZE}" do
-        expect do
-          subject.list(
-            first_page: 1,
-            per_page: described_class::MAX_PAGE_SIZE + 1
-          )
-        end.to raise_error(FreshdeskApiV2::PaginationException)
-      end
-
-      it 'uses last_page as integer max if not specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=100'
-        expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
+    it 'raises an exception when called with an last_page of less than start_page' do
+      expect do
         subject.list(
-          first_page: 1,
-          per_page: described_class::MAX_PAGE_SIZE
+          first_page: 2,
+          last_page: 1,
+          per_page: FreshdeskApiV2::Utils::MAX_PAGE_SIZE
         )
-      end
+      end.to raise_error(FreshdeskApiV2::PaginationException)
+    end
 
-      it 'uses last_page as specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=100'
-        expect(@http).to receive(:paginate).with(url, 2)
+    it 'does not raise an exception when called with an last_page equal to start_page' do
+      expect do
         subject.list(
-          first_page: 1,
+          first_page: 2,
           last_page: 2,
-          per_page: described_class::MAX_PAGE_SIZE
+          per_page: FreshdeskApiV2::Utils::MAX_PAGE_SIZE
         )
-      end
+      end.not_to raise_error
+    end
 
-      it 'constructs a url with per_page as specified' do
-        url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=15'
-        expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
+    it "raises an exception when called with a per_page of greater than #{FreshdeskApiV2::Utils::MAX_PAGE_SIZE}" do
+      expect do
         subject.list(
           first_page: 1,
-          per_page: 15
+          per_page: FreshdeskApiV2::Utils::MAX_PAGE_SIZE + 1
         )
-      end
+      end.to raise_error(FreshdeskApiV2::PaginationException)
+    end
+
+    it 'uses last_page as integer max if not specified' do
+      url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=100'
+      expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
+      subject.list(
+        first_page: 1,
+        per_page: FreshdeskApiV2::Utils::MAX_PAGE_SIZE
+      )
+    end
+
+    it 'uses last_page as specified' do
+      url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=100'
+      expect(@http).to receive(:paginate).with(url, 2)
+      subject.list(
+        first_page: 1,
+        last_page: 2,
+        per_page: FreshdeskApiV2::Utils::MAX_PAGE_SIZE
+      )
+    end
+
+    it 'constructs a url with per_page as specified' do
+      url = 'https://test-domain.freshdesk.com/api/v2/test?page=1&per_page=15'
+      expect(@http).to receive(:paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
+      subject.list(
+        first_page: 1,
+        per_page: 15
+      )
     end
   end
 end
