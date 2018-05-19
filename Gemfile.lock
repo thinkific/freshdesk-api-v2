@@ -4,7 +4,7 @@ PATH
     freshdesk_api_v2 (0.1.0)
       json (~> 2.1)
       nitlink (~> 1.1)
-      rest-client (~> 2.0, >= 2.0.2)
+      rest-client (~> 2.0)
 
 GEM
   remote: https://rubygems.org/
