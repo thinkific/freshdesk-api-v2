@@ -17,7 +17,7 @@ module FreshdeskApiV2
         # Freshdesk will only return up to a maximum of 10 pages, so
         # kill the loop if we get that far OR if we hit the last requested page
         break if current_page > Utils::MAX_SEARCH_PAGES || current_page > last_page
-        url.gsub!("?page=#{page - 1}", "?page=#{page}")
+        url.gsub!("?page=#{current_page - 1}", "?page=#{current_page}")
         _, items = do_search(url)
         collection += items
         break if current_page > page_count
@@ -84,7 +84,7 @@ module FreshdeskApiV2
       end
 
       def next_page(url)
-        url[PAGE_REGEX, 1]
+        url[Utils::PAGE_REGEX, 1]
       end
 
       def accept_headers
