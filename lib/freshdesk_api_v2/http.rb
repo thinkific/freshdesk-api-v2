@@ -29,15 +29,15 @@ module FreshdeskApiV2
     # page in a header called 'link' with a rel of 'next'
     def paginate(url, last_page, collection = [])
       response = get(url)
-      collection += JSON.parse(response.body)
       links = @link_parser.parse(response)
+      collection += JSON.parse(response.body)
       while !links.nil? && links.by_rel('next')
         url = links.by_rel('next').target.to_s
         next_page = next_page(url)
         if next_page.to_i <= last_page.to_i
           response = get(url)
-          collection += JSON.parse(response.body)
           links = @link_parser.parse(response)
+          collection += JSON.parse(response.body)
         else
           links = nil
         end
@@ -46,23 +46,23 @@ module FreshdeskApiV2
     end
 
     def get(url)
-      res = construct_rest_client(url)
-      res.get(accept_headers)
+      res = construct_http_client(url, accept_headers)
+      res.get
     end
 
     def delete(url)
-      res = construct_rest_client(url)
-      res.delete(accept_headers)
+      res = construct_http_client(url, accept_headers)
+      res.delete
     end
 
     def put(url, attributes)
-      res = construct_rest_client(url)
-      res.put(attributes.to_json, content_type_headers)
+      res = construct_http_client(url, content_type_headers)
+      res.put(attributes.to_json)
     end
 
     def post(url, attributes)
-      res = construct_rest_client(url)
-      res.post(attributes.to_json, content_type_headers)
+      res = construct_http_client(url, content_type_headers)
+      res.post(attributes.to_json)
     end
 
     def domain
@@ -111,8 +111,13 @@ module FreshdeskApiV2
         end
       end
 
-      def construct_rest_client(url)
-        RestClient::Resource.new(url, username_or_api_key, password_or_x)
+      def construct_http_client(url, headers)
+        Excon.new(url,
+          uri_parser: Addressable::URI,
+          headers: headers,
+          user: username_or_api_key,
+          password: password_or_x
+        )
       end
   end
 end

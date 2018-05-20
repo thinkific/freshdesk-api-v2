@@ -15,7 +15,7 @@ RSpec.describe FreshdeskApiV2::Entity do
       conf.api_key = api_key
     end
     @http = FreshdeskApiV2::Http.new(FreshdeskApiV2.configuration)
-    allow(@http).to receive(:construct_rest_client).and_return(mock_rest_client)
+    allow(@http).to receive(:construct_http_client).and_return(mock_rest_client)
   end
 
   after do

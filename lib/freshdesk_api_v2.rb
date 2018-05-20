@@ -1,6 +1,7 @@
 require 'freshdesk_api_v2/version'
 require 'config'
-require 'rest-client'
+require 'addressable/uri'
+require 'excon'
 require 'nitlink'
 require 'uri'
 require 'json'

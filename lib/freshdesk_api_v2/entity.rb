@@ -90,6 +90,7 @@ module FreshdeskApiV2
       def http_search(query, first_page, last_page)
         encoded_query = '"' + URI.encode(query) + '"'
         url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{encoded_query}"
+        puts "URL: #{url}"
         @http.search_paginate(url, last_page)
       end
 
