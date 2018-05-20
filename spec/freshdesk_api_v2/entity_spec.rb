@@ -109,15 +109,32 @@ RSpec.describe FreshdeskApiV2::Entity do
   end
 
   context 'search' do
-    let(:query) { '(active:true)' }
+    let(:query) do
+      q = FreshdeskApiV2::SearchArgs.new
+      q.add('active', true)
+    end
+
     let(:mock_get_response) do
       double('Mock Get Response',
+        status: 200,
         body: { 'total' => 1, 'results' => [{ id: '1', name: 'Bob' }] }.to_json
       )
     end
 
     before do
       allow(mock_rest_client).to receive(:get).and_return(mock_get_response)
+    end
+
+    it 'raises an exception when the query is invalid' do
+      body = { description: 'error', errors: [{ field: 'query', message: 'message' }] }.to_json
+      allow(mock_get_response).to receive(:body).and_return(body)
+      allow(mock_get_response).to receive(:status).and_return(400)
+      expect do
+        subject.search(
+          query,
+          first_page: 1
+        )
+      end.to raise_error(FreshdeskApiV2::InvalidSearchException)
     end
 
     it 'raises an exception when not called with a query' do
@@ -159,7 +176,7 @@ RSpec.describe FreshdeskApiV2::Entity do
     end
 
     it 'uses last_page as integer max if not specified' do
-      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="(active:true)"'
+      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="active:true"'
       expect(@http).to receive(:search_paginate).with(url, FreshdeskApiV2::Utils::INTEGER_MAX)
       subject.search(
         query,
@@ -168,7 +185,7 @@ RSpec.describe FreshdeskApiV2::Entity do
     end
 
     it 'uses last_page as specified' do
-      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="(active:true)"'
+      url = 'https://test-domain.freshdesk.com/api/v2/search/test?page=1&query="active:true"'
       expect(@http).to receive(:search_paginate).with(url, 2)
       subject.search(
         query,

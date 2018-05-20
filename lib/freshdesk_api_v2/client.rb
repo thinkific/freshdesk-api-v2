@@ -10,6 +10,14 @@ module FreshdeskApiV2
       FreshdeskApiV2::Contacts.new(@http)
     end
 
+    def contact_fields
+      FreshdeskApiV2::ContactFields.new(@http)
+    end
+
+    def company_fields
+      FreshdeskApiV2::CompanyFields.new(@http)
+    end
+
     def companies
       FreshdeskApiV2::Companies.new(@http)
     end

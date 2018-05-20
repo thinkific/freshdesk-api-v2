@@ -80,7 +80,13 @@ module FreshdeskApiV2
         else
           page_count = 1
         end
-        [page_count, payload['results']]
+        results = payload['results']
+        if results.nil? && response.status == 400
+          error_desc = payload['description']
+          errors = payload['errors']
+          raise InvalidSearchException.new(error_desc, errors)
+        end
+        [page_count, results]
       end
 
       def next_page(url)

@@ -12,12 +12,15 @@ module FreshdeskApiV2
       http_list(first_page, last_page, per_page)
     end
 
+    # TODO - Note that queries that by email or things that have special characters to not work yet in
+    # Freshdesk
     def search(query, options = {})
-      query = (query || '').to_s.strip
-      raise SearchException, 'You must provide a query expression' if query.length == 0
+      raise SearchException, 'You must provide a query' if query.nil?
+      raise SearchException, 'You must provide a query of type FreshdeskApiV2::SearchArgs' unless query.is_a?(FreshdeskApiV2::SearchArgs)
+      raise SearchException, 'You must provide a query' unless query.valid?
       first_page, last_page = extract_pagination(options)
       validate_pagination!(first_page, last_page)
-      http_search(query, first_page, last_page)
+      http_search(query.to_query, first_page, last_page)
     end
 
     def show(id)
@@ -88,8 +91,7 @@ module FreshdeskApiV2
 
       # For example, see: https://developers.freshdesk.com/api/#filter_contacts
       def http_search(query, first_page, last_page)
-        encoded_query = '"' + URI.encode(query) + '"'
-        url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{encoded_query}"
+        url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{query}"
         @http.search_paginate(url, last_page)
       end
 

@@ -8,10 +8,6 @@ RSpec.describe FreshdeskApiV2 do
   end
 
   it 'tests things' do
-    # config = FreshdeskApiV2::Config.new
-    # config.domain = 'thinkificdev'
-    # config.api_key = 'Q18WiF1ToJM3qRnzroX'
-    # client = FreshdeskApiV2::Client.new(config)
-    # companies = client.companies.list(first_page: 1, last_page: 3)
+
   end
 end
