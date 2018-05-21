@@ -1,5 +1,5 @@
 module FreshdeskApiV2
-  class ContactFields < Entity
+  class ContactFields < ListOnlyBase
     protected
 
       def endpoint

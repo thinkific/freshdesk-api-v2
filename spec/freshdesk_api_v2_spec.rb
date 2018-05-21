@@ -6,8 +6,4 @@ RSpec.describe FreshdeskApiV2 do
   it 'can be configured' do
     expect(FreshdeskApiV2).to respond_to(:configure)
   end
-
-  it 'tests things' do
-
-  end
 end

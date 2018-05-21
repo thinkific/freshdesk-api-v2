@@ -2,6 +2,13 @@ module FreshdeskApiV2
   class Config
     attr_accessor :domain, :api_key, :username, :password
 
+    def initialize(hash = {})
+      @domain = hash[:domain]
+      @api_key = hash[:api_key]
+      @username = hash[:username]
+      @password = hash[:password]
+    end
+
     def validate!
       validate_domain!
       validate_credentials!
@@ -10,9 +17,7 @@ module FreshdeskApiV2
     private
 
       def validate_domain!
-        if domain.nil? || domain.to_s.length == 0
-          raise ConfigurationException, 'Domain is required.'
-        end
+        raise ConfigurationException, 'Domain is required.' if domain.nil? || domain.to_s.length == 0
       end
 
       def validate_credentials!

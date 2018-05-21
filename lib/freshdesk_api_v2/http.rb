@@ -46,23 +46,23 @@ module FreshdeskApiV2
     end
 
     def get(url)
-      res = construct_http_client(url, accept_headers)
+      res = construct_http_client(url)
       res.get
     end
 
     def delete(url)
-      res = construct_http_client(url, accept_headers)
+      res = construct_http_client(url)
       res.delete
     end
 
     def put(url, attributes)
-      res = construct_http_client(url, content_type_headers)
-      res.put(attributes.to_json)
+      res = construct_http_client(url)
+      res.put(body: attributes.to_json)
     end
 
     def post(url, attributes)
-      res = construct_http_client(url, content_type_headers)
-      res.post(attributes.to_json)
+      res = construct_http_client(url)
+      res.post(body: attributes.to_json)
     end
 
     def domain
@@ -93,12 +93,11 @@ module FreshdeskApiV2
         url[Utils::PAGE_REGEX, 1]
       end
 
-      def accept_headers
-        { accept: 'application/json' }
-      end
-
-      def content_type_headers
-        { content_type: 'application/json' }
+      def headers
+        {
+          'Accept' => 'application/json',
+          'Content-Type' => 'application/json'
+        }
       end
 
       def password_or_x
@@ -117,7 +116,7 @@ module FreshdeskApiV2
         end
       end
 
-      def construct_http_client(url, headers)
+      def construct_http_client(url)
         Excon.new(url,
           uri_parser: Addressable::URI,
           headers: headers,

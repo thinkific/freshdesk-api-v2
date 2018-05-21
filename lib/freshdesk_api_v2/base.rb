@@ -1,5 +1,5 @@
 module FreshdeskApiV2
-  class Entity
+  class Base
     def initialize(http)
       @http = http
     end
@@ -29,11 +29,13 @@ module FreshdeskApiV2
 
     def create(attributes)
       validate_create_attributes!(attributes)
+      attributes = prepare_attributes!(attributes)
       http_create(attributes)
     end
 
     def update(id, attributes)
       validate_update_attributes!(attributes)
+      attributes = prepare_attributes!(attributes)
       http_update(id, attributes)
     end
 
@@ -62,6 +64,16 @@ module FreshdeskApiV2
         raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
       end
 
+      def prepare_attributes!(attributes)
+        clean = attributes.reject { |key, value | !allowed_attributes.include?(key) || value.nil? }
+        custom_fields = clean['custom_fields']
+        if !custom_fields.nil? && custom_fields.any?
+          custom_fields = custom_fields.reject { |_, value| value.nil? }
+          clean['custom_fields'] = custom_fields if !custom_fields.nil? && custom_fields.any?
+        end
+        clean
+      end
+
     private
 
       def http_show(id)
@@ -76,7 +88,7 @@ module FreshdeskApiV2
 
       def http_destroy(id)
         response = @http.delete("#{api_url}/#{id}")
-        response.code
+        response.status
       end
 
       def http_update(id, attributes)
