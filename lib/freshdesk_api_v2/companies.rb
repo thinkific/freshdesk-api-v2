@@ -1,15 +1,15 @@
 module FreshdeskApiV2
   class Companies < Base
-    ALLOWED_ATTRIBUTES = %w[
-      custom_fields
-      description
-      domains
-      name
-      note
-      health_score
-      account_tier
-      renewal_date
-      industry
+    ALLOWED_ATTRIBUTES = [
+      :custom_fields,
+      :description,
+      :domains,
+      :name,
+      :note,
+      :health_score,
+      :account_tier,
+      :renewal_date,
+      :industry
     ].freeze
 
     protected

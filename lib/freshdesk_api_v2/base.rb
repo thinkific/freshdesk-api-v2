@@ -4,43 +4,43 @@ module FreshdeskApiV2
       @http = http
     end
 
-    def list(options = {})
-      per_page = value_from_options(options, :per_page) || Utils::MAX_PAGE_SIZE
+    def list(pagination_options = {})
+      per_page = pagination_options[:per_page] || Utils::MAX_PAGE_SIZE
       raise PaginationException, "Max per page is #{Utils::MAX_PAGE_SIZE}" if per_page.to_i > Utils::MAX_PAGE_SIZE
-      first_page, last_page = extract_pagination(options)
-      validate_pagination!(first_page, last_page)
-      http_list(first_page, last_page, per_page)
+      first_page, last_page = extract_list_pagination(pagination_options)
+      validate_list_pagination!(first_page, last_page)
+      paginated_get(first_page, last_page, per_page)
     end
 
     # TODO - Note that queries that by email or things that have special characters to not work yet in
     # Freshdesk
-    def search(query, options = {})
+    def search(query, pagination_options = {})
       raise SearchException, 'You must provide a query' if query.nil?
       raise SearchException, 'You must provide a query of type FreshdeskApiV2::SearchArgs' unless query.is_a?(FreshdeskApiV2::SearchArgs)
       raise SearchException, 'You must provide a query' unless query.valid?
-      first_page, last_page = extract_pagination(options)
-      validate_pagination!(first_page, last_page)
-      http_search(query.to_query, first_page, last_page)
+      first_page, last_page = extract_search_pagination(pagination_options)
+      validate_search_pagination!(first_page, last_page)
+      paginated_search(query.to_query, first_page, last_page)
     end
 
     def show(id)
-      http_show(id)
+      get(id)
     end
 
     def create(attributes)
       validate_create_attributes!(attributes)
       attributes = prepare_attributes!(attributes)
-      http_create(attributes)
+      post(attributes)
     end
 
     def update(id, attributes)
       validate_update_attributes!(attributes)
       attributes = prepare_attributes!(attributes)
-      http_update(id, attributes)
+      put(id, attributes)
     end
 
     def destroy(id)
-      http_destroy(id)
+      delete(id)
     end
 
     protected
@@ -59,9 +59,17 @@ module FreshdeskApiV2
         raise UpdateException, 'Please provide attributes' if attributes.nil? || attributes.count == 0
       end
 
-      def validate_pagination!(first_page, last_page)
+      def validate_list_pagination!(first_page, last_page)
         raise PaginationException, 'first_page must be a number greater than 0' if first_page.to_i <= 0
         raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
+      end
+
+      def validate_search_pagination!(first_page, last_page)
+        raise PaginationException, 'first_page must be a number greater than 0' if first_page.to_i <= 0
+        unless last_page.nil?
+          raise PaginationException, "last_page cannot exceed #{Utils::MAX_SEARCH_PAGES}" if last_page.to_i > Utils::MAX_SEARCH_PAGES
+          raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
+        end
       end
 
       def prepare_attributes!(attributes)
@@ -76,47 +84,47 @@ module FreshdeskApiV2
 
     private
 
-      def http_show(id)
+      def get(id)
         response = @http.get("#{api_url}/#{id}")
         JSON.parse(response.body)
       end
 
-      def http_create(attributes)
+      def post(attributes)
         response = @http.post("#{api_url}", attributes)
         JSON.parse(response.body)
       end
 
-      def http_destroy(id)
+      def delete(id)
         response = @http.delete("#{api_url}/#{id}")
         response.status
       end
 
-      def http_update(id, attributes)
+      def put(id, attributes)
         response = @http.put("#{api_url}/#{id}", attributes)
         JSON.parse(response.body)
       end
 
-      def http_list(first_page, last_page, per_page)
+      def paginated_get(first_page, last_page, per_page)
         url = "#{api_url}?page=#{first_page}&per_page=#{per_page}"
-        @http.paginate(url, last_page)
+        @http.paginated_get(url, last_page)
       end
 
       # For example, see: https://developers.freshdesk.com/api/#filter_contacts
-      def http_search(query, first_page, last_page)
+      def paginated_search(query, first_page, last_page)
         url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{query}"
-        @http.search_paginate(url, last_page)
+        @http.paginated_search(url, last_page)
       end
 
-      def extract_pagination(options)
-        first_page = value_from_options(options, :first_page)
-        last_page = value_from_options(options, :last_page)
-        first_page ||= Utils::DEFAULT_PAGE
-        last_page ||= Utils::INTEGER_MAX
+      def extract_list_pagination(options)
+        first_page = options[:first_page] || Utils::DEFAULT_PAGE
+        last_page = options[:last_page] || Utils::INTEGER_MAX
         [first_page, last_page]
       end
 
-      def value_from_options(options, key)
-        options[key.to_s] || options[key.to_sym]
+      def extract_search_pagination(options)
+        first_page = options[:first_page] || Utils::DEFAULT_PAGE
+        last_page = options[:last_page]
+        [first_page, last_page]
       end
 
       def base_api_url
