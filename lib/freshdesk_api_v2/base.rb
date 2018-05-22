@@ -73,7 +73,7 @@ module FreshdeskApiV2
       end
 
       def prepare_attributes!(attributes)
-        clean = attributes.reject { |key, value | !allowed_attributes.include?(key) || value.nil? }
+        clean = attributes.reject { |key, value | !allowed_attributes.include?(key.to_sym) || value.nil? }
         custom_fields = clean['custom_fields']
         if !custom_fields.nil? && custom_fields.any?
           custom_fields = custom_fields.reject { |_, value| value.nil? }

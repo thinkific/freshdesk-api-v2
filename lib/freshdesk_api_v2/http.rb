@@ -7,7 +7,7 @@ module FreshdeskApiV2
 
     # Freshdesk's search API uses a different pagination mechanism than their
     # regular pagination mechanism, so this implementation needs to be different.
-    def paginate_search(url, last_page, collection = [])
+    def paginated_search(url, last_page, collection = [])
       current_page = 1
       page_count, items = do_search(url)
       collection += items
