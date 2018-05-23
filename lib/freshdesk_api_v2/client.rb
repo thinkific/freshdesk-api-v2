@@ -1,16 +1,14 @@
 module FreshdeskApiV2
   class Client
-    attr_reader :configuration
-
     def initialize(configuration = nil)
       if !configuration.nil?
-        @configuration = Config.new(configuration) if configuration.is_a?(Hash)
-        @configuration = configuration if configuration.is_a?(FreshdeskApiV2::Config)
+        configuration = Config.new(configuration) if configuration.is_a?(Hash)
+        configuration = configuration if configuration.is_a?(FreshdeskApiV2::Config)
       else
-        @configuration = FreshdeskApiV2.configuration
+        configuration = FreshdeskApiV2.configuration
       end
-      @configuration.validate!
-      @http = Http.new(@configuration)
+      configuration.validate!
+      @http = Http.new(configuration)
     end
 
     def contacts

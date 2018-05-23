@@ -37,5 +37,11 @@ module FreshdeskApiV2
       s = @args.join('')
       '"' + s + '"'
     end
+
+    class << self
+      def create(field, value)
+        new().add(field, value)
+      end
+    end
   end
 end

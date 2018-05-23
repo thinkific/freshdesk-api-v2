@@ -22,7 +22,15 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Currently, the API bindings only expose the following endpoints:
+
+1. [Contacts](https://developers.freshdesk.com/api/#contacts)
+2. [Companies](https://developers.freshdesk.com/api/#companies)
+3. [Contact Fields](https://developers.freshdesk.com/api/#list_all_contact_fields)
+4. [Company Fields](https://developers.freshdesk.com/api/#list_all_company_fields)
+
+Note that while search/filter works for both Companies and Contacts, the API is still not working perfectly.
+For example, filtering Contacts by email fails - likely due to encosing issues on Freshdesk's side.
 
 ## Development
 

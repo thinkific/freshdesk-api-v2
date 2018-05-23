@@ -5,8 +5,7 @@ module FreshdeskApiV2
     end
 
     def list
-      response = @http.get(api_url)
-      JSON.parse(response.body)
+      @http.get(api_url)
     end
 
     protected
@@ -19,7 +18,7 @@ module FreshdeskApiV2
     private
 
       def base_api_url
-        "https://#{@http.domain}.freshdesk.com/api/v2"
+        "https://#{@http.send(:domain)}.freshdesk.com/api/v2"
       end
 
       def api_url

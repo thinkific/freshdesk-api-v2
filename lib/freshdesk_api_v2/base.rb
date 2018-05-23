@@ -4,43 +4,44 @@ module FreshdeskApiV2
       @http = http
     end
 
+    # pagination_options: page: integer > 0, per_page: integer > 0 && <= 100
     def list(pagination_options = {})
-      per_page = pagination_options[:per_page] || Utils::MAX_PAGE_SIZE
-      raise PaginationException, "Max per page is #{Utils::MAX_PAGE_SIZE}" if per_page.to_i > Utils::MAX_PAGE_SIZE
-      first_page, last_page = extract_list_pagination(pagination_options)
-      validate_list_pagination!(first_page, last_page)
-      paginated_get(first_page, last_page, per_page)
+      page = pagination_options[:page]
+      per_page = pagination_options[:per_page]
+      validate_list_pagination!(page, per_page)
+      @http.get("#{endpoint}?page=#{page}&per_page=#{per_page}")
     end
 
     # TODO - Note that queries that by email or things that have special characters to not work yet in
-    # Freshdesk
+    # Freshdesk. This appears to be a bug on their side.
+    # query: An instance of FreshdeskApiV2::SearchArgs
+    # pagination_options: page: integer > 0 && <= 10, per_page: integer > 0 && <= 30
     def search(query, pagination_options = {})
-      raise SearchException, 'You must provide a query' if query.nil?
-      raise SearchException, 'You must provide a query of type FreshdeskApiV2::SearchArgs' unless query.is_a?(FreshdeskApiV2::SearchArgs)
-      raise SearchException, 'You must provide a query' unless query.valid?
-      first_page, last_page = extract_search_pagination(pagination_options)
-      validate_search_pagination!(first_page, last_page)
-      paginated_search(query.to_query, first_page, last_page)
+      validate_search_query!(query)
+      page = pagination_options[:page]
+      per_page = pagination_options[:per_page]
+      validate_search_pagination!(page, per_page)
+      @http.get("#{endpoint}/search/#{endpoint}?page=#{page}&query=#{query}")
     end
 
-    def show(id)
-      get(id)
+    def get(id)
+      @http.get("/#{endpoint}/#{id}")
     end
 
     def create(attributes)
       validate_create_attributes!(attributes)
       attributes = prepare_attributes!(attributes)
-      post(attributes)
+      @http.post(endpoint, attributes)
     end
 
     def update(id, attributes)
       validate_update_attributes!(attributes)
       attributes = prepare_attributes!(attributes)
-      put(id, attributes)
+      @http.put("#{endpoint}/#{id}", attributes)
     end
 
     def destroy(id)
-      delete(id)
+      @http.delete("#{endpoint}/#{id}")
     end
 
     protected
@@ -59,16 +60,19 @@ module FreshdeskApiV2
         raise UpdateException, 'Please provide attributes' if attributes.nil? || attributes.count == 0
       end
 
-      def validate_list_pagination!(first_page, last_page)
-        raise PaginationException, 'first_page must be a number greater than 0' if first_page.to_i <= 0
-        raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
+      def validate_list_pagination!(page, per_page)
+        raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
+        unless per_page.nil?
+          raise PaginationException, 'per_page must be a number greater than 0' if per_page.to_i <= 0
+          raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_LIST_PER_PAGE}" if per_page.to_i > Utils::MAX_LIST_PER_PAGE
+        end
       end
 
-      def validate_search_pagination!(first_page, last_page)
-        raise PaginationException, 'first_page must be a number greater than 0' if first_page.to_i <= 0
-        unless last_page.nil?
-          raise PaginationException, "last_page cannot exceed #{Utils::MAX_SEARCH_PAGES}" if last_page.to_i > Utils::MAX_SEARCH_PAGES
-          raise PaginationException, 'last_page must be a number greater than or equal to first_page' if last_page.to_i < first_page.to_i
+      def validate_search_pagination!(page, per_page)
+        raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
+        unless per_page.nil?
+          raise PaginationException, 'per_page must be a number greater than 0' if per_page.to_i <= 0
+          raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_SEARCH_PER_PAGE}" if per_page.to_i > Utils::MAX_SEARCH_PER_PAGE
         end
       end
 
@@ -82,57 +86,10 @@ module FreshdeskApiV2
         clean
       end
 
-    private
-
-      def get(id)
-        response = @http.get("#{api_url}/#{id}")
-        JSON.parse(response.body)
-      end
-
-      def post(attributes)
-        response = @http.post("#{api_url}", attributes)
-        JSON.parse(response.body)
-      end
-
-      def delete(id)
-        response = @http.delete("#{api_url}/#{id}")
-        response.status
-      end
-
-      def put(id, attributes)
-        response = @http.put("#{api_url}/#{id}", attributes)
-        JSON.parse(response.body)
-      end
-
-      def paginated_get(first_page, last_page, per_page)
-        url = "#{api_url}?page=#{first_page}&per_page=#{per_page}"
-        @http.paginated_get(url, last_page)
-      end
-
-      # For example, see: https://developers.freshdesk.com/api/#filter_contacts
-      def paginated_search(query, first_page, last_page)
-        url = "#{base_api_url}/search/#{endpoint}?page=#{first_page}&query=#{query}"
-        @http.paginated_search(url, last_page)
-      end
-
-      def extract_list_pagination(options)
-        first_page = options[:first_page] || Utils::DEFAULT_PAGE
-        last_page = options[:last_page] || Utils::INTEGER_MAX
-        [first_page, last_page]
-      end
-
-      def extract_search_pagination(options)
-        first_page = options[:first_page] || Utils::DEFAULT_PAGE
-        last_page = options[:last_page]
-        [first_page, last_page]
-      end
-
-      def base_api_url
-        "https://#{@http.domain}.freshdesk.com/api/v2"
-      end
-
-      def api_url
-        "#{base_api_url}/#{endpoint}"
+      def validate_search_query!(query)
+        raise SearchException, 'You must provide a query' if query.nil?
+        raise SearchException, 'You must provide a query of type FreshdeskApiV2::SearchArgs' unless query.is_a?(FreshdeskApiV2::SearchArgs)
+        raise SearchException, 'You must provide a query' unless query.valid?
       end
   end
 end
