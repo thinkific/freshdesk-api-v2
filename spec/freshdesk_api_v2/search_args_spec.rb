@@ -4,6 +4,11 @@ RSpec.describe FreshdeskApiV2::SearchArgs do
     expect(subject.to_query).to eq('"name:Bob"')
   end
 
+  it 'constructs an initial query' do
+    query = FreshdeskApiV2::SearchArgs.create('name', 'Bob')
+    expect(query.to_query).to eq('"name:Bob"')
+  end
+
   it 'constructs an AND query with parentheses' do
     subject.left_parenthesis
       .add('name', 'Bob')

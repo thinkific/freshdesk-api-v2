@@ -21,44 +21,33 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'list' do
-    let(:companies) { [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')] }
+    let(:companies) { double('HTTP Response', body: [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')].to_json) }
 
     before do
-      allow(@mock_http).to receive(:paginated_get).and_return(companies)
+      allow(@mock_http).to receive(:get).and_return(companies)
     end
 
     it 'returns a list of companies' do
-      expect(subject.list).to be_instance_of(Array)
+      expect(JSON.parse(subject.list.body)).to be_instance_of(Array)
     end
 
-    it 'raises an exception when last_page is less than first_page' do
+    it "raises an exception when per_page is greater than #{FreshdeskApiV2::Utils::MAX_LIST_PER_PAGE}" do
       expect do
-        subject.list(first_page: 2, last_page: 1)
-      end.to raise_error(FreshdeskApiV2::PaginationException)
-    end
-
-    it "raises an exception when per_page is greater than #{FreshdeskApiV2::Utils::MAX_PAGE_SIZE}" do
-      expect do
-        subject.list(first_page: 1, per_page: 101)
+        subject.list(first_page: 1, per_page: FreshdeskApiV2::Utils::MAX_LIST_PER_PAGE + 1)
       end.to raise_error(FreshdeskApiV2::PaginationException)
     end
   end
 
   context 'search' do
-    let(:query) do
-      q = FreshdeskApiV2::SearchArgs.new
-      q.add('name', 'Bob')
-      q
-    end
-
-    let(:companies) { [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')] }
+    let(:query) { FreshdeskApiV2::SearchArgs.create('name', 'Bob') }
+    let(:companies) { double('HTTP Response', body: [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')].to_json) }
 
     before do
-      allow(@mock_http).to receive(:paginated_search).and_return(companies)
+      allow(@mock_http).to receive(:get).and_return(companies)
     end
 
     it 'returns a list of companies matching the query' do
-      expect(subject.search(query)).to be_instance_of(Array)
+      expect(JSON.parse(subject.search(query).body)).to be_instance_of(Array)
     end
 
     it 'raises an exception when a query is not given' do
@@ -74,20 +63,14 @@ RSpec.describe FreshdeskApiV2::Companies do
       end.to raise_error(FreshdeskApiV2::SearchException)
     end
 
-    it 'raises an exception when last_page is less than first_page' do
+    it "raises an exception when page is greater than #{FreshdeskApiV2::Utils::MAX_SEARCH_PAGES}" do
       expect do
-        subject.search(query, first_page: 2, last_page: 1)
-      end.to raise_error(FreshdeskApiV2::PaginationException)
-    end
-
-    it "raises an exception when last_page is greater than #{FreshdeskApiV2::Utils::MAX_SEARCH_PAGES}" do
-      expect do
-        subject.search(query, first_page: 1, last_page: 11)
+        subject.search(query, page: FreshdeskApiV2::Utils::MAX_SEARCH_PAGES + 1)
       end.to raise_error(FreshdeskApiV2::PaginationException)
     end
   end
 
-  context 'show' do
+  context 'get' do
     let(:response) { double('Mock HTTP Response', body: company_attributes.to_json) }
 
     before do
@@ -95,12 +78,12 @@ RSpec.describe FreshdeskApiV2::Companies do
     end
 
     it 'returns the company' do
-      expect(subject.show(1)).not_to be_nil
+      expect(JSON.parse(subject.get(1).body)).not_to be_nil
     end
   end
 
   context 'destroy' do
-    let(:response) { double('Mock HTTP Response', status: 204) }
+    let(:response) { double('Mock HTTP Response', body: company_attributes.to_json, status: 204) }
 
     before do
       allow(@mock_http).to receive(:delete).and_return(response)
@@ -112,12 +95,12 @@ RSpec.describe FreshdeskApiV2::Companies do
     end
 
     it 'returns a status code of 204' do
-      expect(subject.destroy(1)).to eq(204)
+      expect(subject.destroy(1).status).to eq(204)
     end
   end
 
   context 'create' do
-    let(:endpoint) { 'https://test.freshdesk.com/api/v2/companies' }
+    let(:endpoint) { 'companies' }
     let(:response) { double('Mock HTTP Response', body: company_attributes.to_json) }
 
     before do
@@ -131,7 +114,7 @@ RSpec.describe FreshdeskApiV2::Companies do
 
     it 'returns the company' do
       response = subject.create(company_attributes)
-      expect(response).not_to be_nil
+      expect(JSON.parse(response.body)).not_to be_nil
     end
 
     it 'filters out non-whitelisted properties' do
@@ -160,7 +143,7 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'update' do
-    let(:endpoint) { 'https://test.freshdesk.com/api/v2/companies/1' }
+    let(:endpoint) { 'companies/1' }
     let(:response) { double('Mock HTTP Response', body: company_attributes(id: 1).to_json) }
 
     before do
@@ -174,7 +157,7 @@ RSpec.describe FreshdeskApiV2::Companies do
 
     it 'returns the company' do
       response = subject.update(1, company_attributes)
-      expect(response).not_to be_nil
+      expect(JSON.parse(response.body)).not_to be_nil
     end
 
     it 'filters out non-whitelisted properties' do

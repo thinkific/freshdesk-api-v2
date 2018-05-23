@@ -70,6 +70,7 @@ module FreshdeskApiV2
 
       def validate_search_pagination!(page, per_page)
         raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
+        raise PaginationException, "page must be less than or equal to #{Utils::MAX_SEARCH_PAGES}" if !page.nil? && page.to_i > Utils::MAX_SEARCH_PAGES
         unless per_page.nil?
           raise PaginationException, 'per_page must be a number greater than 0' if per_page.to_i <= 0
           raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_SEARCH_PER_PAGE}" if per_page.to_i > Utils::MAX_SEARCH_PER_PAGE

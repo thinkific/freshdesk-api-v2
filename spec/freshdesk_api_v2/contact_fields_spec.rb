@@ -16,7 +16,7 @@ RSpec.describe FreshdeskApiV2::ContactFields do
     end
 
     it 'return a list of hashes corresponding to the fields on a contact' do
-      expect(subject.list).to be_an_instance_of(Array)
+      expect(JSON.parse(subject.list.body)).to be_an_instance_of(Array)
     end
   end
 
