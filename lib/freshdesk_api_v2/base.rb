@@ -1,3 +1,5 @@
+require 'byebug'
+
 module FreshdeskApiV2
   class Base
     def initialize(http)
@@ -9,19 +11,24 @@ module FreshdeskApiV2
       page = pagination_options[:page]
       per_page = pagination_options[:per_page]
       validate_list_pagination!(page, per_page)
-      @http.get("#{endpoint}?page=#{page}&per_page=#{per_page}")
+      qs = pagination_query_string(page: page, per_page: per_page)
+      url = qs.length > 0 ? "#{endpoint}?#{qs}" : endpoint
+      @http.get(url)
     end
 
     # TODO - Note that queries that by email or things that have special characters to not work yet in
     # Freshdesk. This appears to be a bug on their side.
     # query: An instance of FreshdeskApiV2::SearchArgs
-    # pagination_options: page: integer > 0 && <= 10, per_page: integer > 0 && <= 30
+    # pagination_options: page: integer > 0
     def search(query, pagination_options = {})
       validate_search_query!(query)
       page = pagination_options[:page]
-      per_page = pagination_options[:per_page]
-      validate_search_pagination!(page, per_page)
-      @http.get("#{endpoint}/search/#{endpoint}?page=#{page}&query=#{query}")
+      validate_search_pagination!(page)
+      qs = pagination_query_string(page: page)
+      url = qs.length > 0 ?
+        "search/#{endpoint}?#{qs}&query=#{query.to_query}" :
+        "search/#{endpoint}?query=#{query.to_query}"
+      @http.get(url)
     end
 
     def get(id)
@@ -46,6 +53,12 @@ module FreshdeskApiV2
 
     protected
 
+      def pagination_query_string(hash)
+        hash.reject { |_, value| value.nil? }
+          .map { |key, value| "#{key}=#{value}"}
+          .join('&')
+      end
+
       # This method should be overridden in derived classes
       def endpoint
         raise StandardError, 'Please implement this method.'
@@ -68,13 +81,9 @@ module FreshdeskApiV2
         end
       end
 
-      def validate_search_pagination!(page, per_page)
+      def validate_search_pagination!(page)
         raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
         raise PaginationException, "page must be less than or equal to #{Utils::MAX_SEARCH_PAGES}" if !page.nil? && page.to_i > Utils::MAX_SEARCH_PAGES
-        unless per_page.nil?
-          raise PaginationException, 'per_page must be a number greater than 0' if per_page.to_i <= 0
-          raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_SEARCH_PER_PAGE}" if per_page.to_i > Utils::MAX_SEARCH_PER_PAGE
-        end
       end
 
       def prepare_attributes!(attributes)
