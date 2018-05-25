@@ -4,22 +4,22 @@ RSpec.describe FreshdeskApiV2::Client do
   end
 
   it 'can be constructed from defaults' do
-    expect {
-      client = FreshdeskApiV2::Client.new
-    }.not_to raise_error
+    expect do
+      FreshdeskApiV2::Client.new
+    end.not_to raise_error
   end
 
   it 'can be constructed from a hash of settings' do
-    expect {
+    expect do
       FreshdeskApiV2::Client.new(domain: 'domain', api_key: 'api_key')
-    }.not_to raise_error
+    end.not_to raise_error
   end
 
   it 'can be constructed from a FreshdeskApiV2::Config object' do
     config = FreshdeskApiV2::Config.new(domain: 'domain', api_key: 'api_key')
-    expect {
-      client = FreshdeskApiV2::Client.new(config)
-    }.not_to raise_error
+    expect do
+      FreshdeskApiV2::Client.new(config)
+    end.not_to raise_error
   end
 
   it 'responds to contacts with a Contacts object' do

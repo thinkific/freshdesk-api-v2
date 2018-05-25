@@ -14,7 +14,7 @@ module FreshdeskApiV2
       @http.get(url)
     end
 
-    # TODO - Note that queries that by email or things that have special characters to not work yet in
+    # TODO - Note that some 'filters' (contacts by email, for example) do not work yet in
     # Freshdesk. This appears to be a bug on their side.
     # query: An instance of FreshdeskApiV2::SearchArgs
     # pagination_options: page: integer > 0
@@ -23,9 +23,7 @@ module FreshdeskApiV2
       page = pagination_options[:page]
       validate_search_pagination!(page)
       qs = pagination_query_string(page: page)
-      url = qs.length > 0 ?
-        "search/#{endpoint}?#{qs}&query=#{query.to_query}" :
-        "search/#{endpoint}?query=#{query.to_query}"
+      url = qs.length > 0 ? "search/#{endpoint}?#{qs}&query=#{query.to_query}" : "search/#{endpoint}?query=#{query.to_query}"
       @http.get(url)
     end
 
@@ -72,11 +70,10 @@ module FreshdeskApiV2
       end
 
       def validate_list_pagination!(page, per_page)
+        return if page.nil? && per_page.nil?
         raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
-        unless per_page.nil?
-          raise PaginationException, 'per_page must be a number greater than 0' if per_page.to_i <= 0
-          raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_LIST_PER_PAGE}" if per_page.to_i > Utils::MAX_LIST_PER_PAGE
-        end
+        raise PaginationException, 'per_page must be a number greater than 0' if !per_page.nil? && per_page.to_i <= 0
+        raise PaginationException, "per_page must be a number less than or equal to #{Utils::MAX_LIST_PER_PAGE}" if !per_page.nil? && per_page.to_i > Utils::MAX_LIST_PER_PAGE
       end
 
       def validate_search_pagination!(page)
