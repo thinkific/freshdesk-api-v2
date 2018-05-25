@@ -1,10 +1,13 @@
 require 'byebug'
 RSpec.describe FreshdeskApiV2::Companies do
-  before do
-    @mock_http = double('Mock HTTP', domain: 'test')
+  let(:http) do
+    config = FreshdeskApiV2::Config.new(domain: 'test', api_key: 'key')
+    FreshdeskApiV2::Http.new(config)
   end
 
-  subject { FreshdeskApiV2::Companies.new(@mock_http) }
+  let(:headers) { { 'Accept' => 'application/json', 'Content-Type' => 'application/json' } }
+
+  subject { FreshdeskApiV2::Companies.new(http) }
 
   def company_attributes(overrides = {})
     {
@@ -19,16 +22,45 @@ RSpec.describe FreshdeskApiV2::Companies do
       industry: 'Stuff'
     }.merge(overrides)
   end
-
   context 'list' do
-    let(:companies) { double('HTTP Response', body: [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')].to_json) }
-
-    before do
-      allow(@mock_http).to receive(:get).and_return(companies)
+    let(:companies) do
+      [
+        company_attributes(id: 1, name: 'Company A'),
+        company_attributes(id: 2, name: 'Company B')
+      ]
     end
 
     it 'returns a list of companies' do
-      expect(JSON.parse(subject.list.body)).to be_instance_of(Array)
+      Excon.stub(
+        {
+          method: :get,
+          path: '/api/v2/companies',
+          headers: headers
+        },
+        {
+          body: companies.to_json,
+          status: 200
+        }
+      )
+      response = subject.list
+      expect(JSON.parse(response.body)).to be_instance_of(Array)
+    end
+
+    it 'applies pagination' do
+      Excon.stub(
+        {
+          method: :get,
+          path: '/api/v2/companies',
+          query: 'page=2&per_page=50',
+          headers: headers
+        },
+        {
+          body: companies.to_json,
+          status: 200
+        }
+      )
+      response = subject.list(page: 2, per_page: 50)
+      expect(JSON.parse(response.body)).to be_instance_of(Array)
     end
 
     it "raises an exception when per_page is greater than #{FreshdeskApiV2::Utils::MAX_LIST_PER_PAGE}" do
@@ -39,15 +71,46 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'search' do
-    let(:query) { FreshdeskApiV2::SearchArgs.create('name', 'Bob') }
-    let(:companies) { double('HTTP Response', body: [company_attributes(id: 1, name: 'Company 1'), company_attributes(id: 1, name: 'Company 2')].to_json) }
-
-    before do
-      allow(@mock_http).to receive(:get).and_return(companies)
+    let(:query) { FreshdeskApiV2::SearchArgs.create('name', 'Exon') }
+    let(:companies) do
+      [
+        company_attributes(id: 1, name: 'Company A'),
+        company_attributes(id: 2, name: 'Company B')
+      ]
     end
 
     it 'returns a list of companies matching the query' do
-      expect(JSON.parse(subject.search(query).body)).to be_instance_of(Array)
+      Excon.stub(
+        {
+          method: :get,
+          path: '/api/v2/search/companies',
+          query: 'query="name:Exon"',
+          headers: headers
+        },
+        {
+          body: companies.to_json,
+          status: 200
+        }
+      )
+      response = subject.search(query)
+      expect(JSON.parse(response.body)).to be_instance_of(Array)
+    end
+
+    it 'returns a list of companies matching the query and page' do
+      Excon.stub(
+        {
+          method: :get,
+          path: '/api/v2/search/companies',
+          query: 'page=2&query="name:Exon"',
+          headers: headers
+        },
+        {
+          body: companies.to_json,
+          status: 200
+        }
+      )
+      response = subject.search(query, page: 2)
+      expect(JSON.parse(response.body)).to be_instance_of(Array)
     end
 
     it 'raises an exception when a query is not given' do
@@ -71,27 +134,39 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'get' do
-    let(:response) { double('Mock HTTP Response', body: company_attributes.to_json) }
+    let(:company_response) { company_attributes(id: 1) }
 
-    before do
-      allow(@mock_http).to receive(:get).and_return(response)
-    end
-
-    it 'returns the company' do
+    it 'returns the contact' do
+      Excon.stub(
+        {
+          method: :get,
+          path: '/api/v2/companies/1',
+          headers: headers
+        },
+        {
+          body: company_response.to_json,
+          status: 200
+        }
+      )
       expect(JSON.parse(subject.get(1).body)).not_to be_nil
     end
   end
 
   context 'destroy' do
-    let(:response) { double('Mock HTTP Response', body: company_attributes.to_json, status: 204) }
+    let(:company_response) { company_attributes(id: 1) }
 
     before do
-      allow(@mock_http).to receive(:delete).and_return(response)
-    end
-
-    it 'deletes the company' do
-      expect(@mock_http).to receive(:delete).and_return(response)
-      subject.destroy(1)
+      Excon.stub(
+        {
+          method: :delete,
+          path: '/api/v2/companies/1',
+          headers: headers
+        },
+        {
+          body: company_response.to_json,
+          status: 204
+        }
+      )
     end
 
     it 'returns a status code of 204' do
@@ -100,32 +175,46 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'create' do
-    let(:endpoint) { 'companies' }
-    let(:response) { double('Mock HTTP Response', body: company_attributes.to_json) }
+    let(:company_response) { company_attributes(id: 1) }
 
     before do
-      allow(@mock_http).to receive(:post).and_return(response)
+      Excon.stub(
+        {
+          method: :post,
+          path: '/api/v2/companies',
+          headers: headers,
+          body: company_attributes.to_json
+        },
+        {
+          body: company_response.to_json,
+          status: 201
+        }
+      )
     end
 
-    it 'creates the company' do
-      expect(@mock_http).to receive(:post).with(endpoint, company_attributes).and_return(response)
-      subject.create(company_attributes)
-    end
-
-    it 'returns the company' do
+    it 'returns the new company' do
       response = subject.create(company_attributes)
-      expect(JSON.parse(response.body)).not_to be_nil
+      expect(response).not_to be_nil
     end
 
     it 'filters out non-whitelisted properties' do
-      expect(@mock_http).to receive(:post).with(endpoint, company_attributes)
       subject.create(company_attributes(monkey: 'Yes'))
     end
 
     it 'filters out nil properties' do
       altered_attributes = company_attributes.dup
       altered_attributes.delete(:description)
-      expect(@mock_http).to receive(:post).with(endpoint, altered_attributes)
+      Excon.stub(
+        {
+          method: :post,
+          path: '/api/v2/companies',
+          headers: headers,
+          body: altered_attributes.to_json
+        },
+        {
+          body: company_response.to_json
+        }
+      )
       subject.create(company_attributes(description: nil))
     end
 
@@ -143,32 +232,46 @@ RSpec.describe FreshdeskApiV2::Companies do
   end
 
   context 'update' do
-    let(:endpoint) { 'companies/1' }
-    let(:response) { double('Mock HTTP Response', body: company_attributes(id: 1).to_json) }
+    let(:company_response) { company_attributes(id: 1) }
 
     before do
-      allow(@mock_http).to receive(:put).and_return(response)
+      Excon.stub(
+        {
+          method: :put,
+          path: '/api/v2/companies/1',
+          headers: headers,
+          body: company_attributes.to_json
+        },
+        {
+          body: company_response.to_json,
+          status: 201
+        }
+      )
     end
 
-    it 'updates the company' do
-      expect(@mock_http).to receive(:put).with(endpoint, company_attributes).and_return(response)
-      subject.update(1, company_attributes)
-    end
-
-    it 'returns the company' do
+    it 'returns the updated company' do
       response = subject.update(1, company_attributes)
-      expect(JSON.parse(response.body)).not_to be_nil
+      expect(response).not_to be_nil
     end
 
     it 'filters out non-whitelisted properties' do
-      expect(@mock_http).to receive(:put).with(endpoint, company_attributes)
       subject.update(1, company_attributes(monkey: 'Yes'))
     end
 
     it 'filters out nil properties' do
       altered_attributes = company_attributes.dup
       altered_attributes.delete(:description)
-      expect(@mock_http).to receive(:put).with(endpoint, altered_attributes)
+      Excon.stub(
+        {
+          method: :put,
+          path: '/api/v2/companies/1',
+          headers: headers,
+          body: altered_attributes.to_json
+        },
+        {
+          body: company_response.to_json
+        }
+      )
       subject.update(1, company_attributes(description: nil))
     end
 

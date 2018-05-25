@@ -28,7 +28,7 @@ module FreshdeskApiV2
     end
 
     def get(id)
-      @http.get("/#{endpoint}/#{id}")
+      @http.get("#{endpoint}/#{id}")
     end
 
     def create(attributes)
@@ -69,6 +69,7 @@ module FreshdeskApiV2
         raise UpdateException, 'Please provide attributes' if attributes.nil? || attributes.count == 0
       end
 
+      # rubocop:disable CyclomaticComplexity
       def validate_list_pagination!(page, per_page)
         return if page.nil? && per_page.nil?
         raise PaginationException, 'page must be a number greater than 0' if !page.nil? && page.to_i <= 0
