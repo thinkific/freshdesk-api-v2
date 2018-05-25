@@ -5,7 +5,6 @@ module FreshdeskApiV2
     end
 
     def get(path, headers = {})
-      puts "PATH: #{path}"
       res = construct_http_client(path, default_headers.merge(headers))
       res.get
     end

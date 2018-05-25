@@ -1,5 +1,3 @@
-require 'byebug'
-
 module FreshdeskApiV2
   class Base
     def initialize(http)
