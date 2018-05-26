@@ -21,6 +21,7 @@ RSpec.describe FreshdeskApiV2::Companies do
       industry: 'Stuff'
     }.merge(overrides)
   end
+
   context 'list' do
     let(:companies) do
       [
