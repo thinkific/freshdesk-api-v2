@@ -1,4 +1,3 @@
-require 'byebug'
 RSpec.describe FreshdeskApiV2::Companies do
   let(:http) do
     config = FreshdeskApiV2::Config.new(domain: 'test', api_key: 'key')

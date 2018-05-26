@@ -1,6 +1,5 @@
 require 'addressable/uri'
 require 'excon'
-require 'nitlink'
 require 'uri'
 require 'cgi'
 require 'json'
