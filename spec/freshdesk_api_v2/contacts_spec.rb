@@ -46,12 +46,12 @@ RSpec.describe FreshdeskApiV2::Contacts do
           headers: headers
         },
         {
-          body: contacts.to_json,
+          body: { results: contacts }.to_json,
           status: 200
         }
       )
       response = subject.list
-      expect(JSON.parse(response.body)).to be_instance_of(Array)
+      expect(JSON.parse(response.body)).to be_instance_of(Hash)
     end
 
     it 'filters on any supplied filters' do
@@ -63,12 +63,12 @@ RSpec.describe FreshdeskApiV2::Contacts do
           headers: headers
         },
         {
-          body: contacts.to_json,
+          body: { results: contacts }.to_json,
           status: 200
         }
       )
       response = subject.list(filters: { email: 'test@example.com', name: 'monkey' })
-      expect(JSON.parse(response.body)).to be_instance_of(Array)
+      expect(JSON.parse(response.body)).to be_instance_of(Hash)
     end
 
     it 'applies pagination' do
@@ -80,12 +80,12 @@ RSpec.describe FreshdeskApiV2::Contacts do
           headers: headers
         },
         {
-          body: contacts.to_json,
+          body: { results: contacts }.to_json,
           status: 200
         }
       )
       response = subject.list(page: 2, per_page: 50)
-      expect(JSON.parse(response.body)).to be_instance_of(Array)
+      expect(JSON.parse(response.body)).to be_instance_of(Hash)
     end
 
     it "raises an exception when per_page is greater than #{FreshdeskApiV2::Utils::MAX_LIST_PER_PAGE}" do

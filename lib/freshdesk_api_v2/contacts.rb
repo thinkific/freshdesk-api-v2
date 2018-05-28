@@ -35,7 +35,7 @@ module FreshdeskApiV2
         qs = qs.length > 0 ? "#{qs}&#{filter_qs}" : filter_qs
       end
       url = qs.length > 0 ? "#{endpoint}?#{qs}" : endpoint
-      @http.get(url)
+      fix_list_response(@http.get(url))
     end
 
     protected

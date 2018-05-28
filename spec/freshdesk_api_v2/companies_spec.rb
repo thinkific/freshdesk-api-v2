@@ -38,12 +38,12 @@ RSpec.describe FreshdeskApiV2::Companies do
           headers: headers
         },
         {
-          body: companies.to_json,
+          body: { results: companies }.to_json,
           status: 200
         }
       )
       response = subject.list
-      expect(JSON.parse(response.body)).to be_instance_of(Array)
+      expect(JSON.parse(response.body)).to be_instance_of(Hash)
     end
 
     it 'applies pagination' do
@@ -55,12 +55,12 @@ RSpec.describe FreshdeskApiV2::Companies do
           headers: headers
         },
         {
-          body: companies.to_json,
+          body: { results: companies }.to_json,
           status: 200
         }
       )
       response = subject.list(page: 2, per_page: 50)
-      expect(JSON.parse(response.body)).to be_instance_of(Array)
+      expect(JSON.parse(response.body)).to be_instance_of(Hash)
     end
 
     it "raises an exception when per_page is greater than #{FreshdeskApiV2::Utils::MAX_LIST_PER_PAGE}" do

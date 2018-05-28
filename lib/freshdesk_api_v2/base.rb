@@ -11,7 +11,7 @@ module FreshdeskApiV2
       validate_list_pagination!(page, per_page)
       qs = pagination_query_string(page: page, per_page: per_page)
       url = qs.length > 0 ? "#{endpoint}?#{qs}" : endpoint
-      @http.get(url)
+      fix_list_response(@http.get(url))
     end
 
     # TODO - Note that some 'filters' (contacts by email, for example) do not work yet in
@@ -96,6 +96,12 @@ module FreshdeskApiV2
         raise SearchException, 'You must provide a query' if query.nil?
         raise SearchException, 'You must provide a query of type FreshdeskApiV2::SearchArgs' unless query.is_a?(FreshdeskApiV2::SearchArgs)
         raise SearchException, 'You must provide a query' unless query.valid?
+      end
+
+      def fix_list_response(response)
+        altered_body = "{\"results\": #{response.body}}"
+        response.body = altered_body
+        response
       end
   end
 end
