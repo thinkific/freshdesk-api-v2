@@ -19,5 +19,4 @@ RSpec.describe FreshdeskApiV2::ContactFields do
       expect(JSON.parse(subject.list.body)).to be_an_instance_of(Hash)
     end
   end
-
 end
