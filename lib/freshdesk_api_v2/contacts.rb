@@ -38,6 +38,17 @@ module FreshdeskApiV2
       fix_list_response(@http.get(url))
     end
 
+    # Hard delete a cotact
+    # Normally, a contact must be soft-deleted before that can be called,
+    # but by providing the force attribute, that can be bypassed.
+    def hard_delete(id, force = false)
+      uri = "#{endpoint}/#{id}/had_delete"
+      if force
+        uri = "#{uri}?force=true"
+      end
+      @http.delete(uri)
+    end
+
     protected
 
       def endpoint
