@@ -42,7 +42,7 @@ module FreshdeskApiV2
     # Normally, a contact must be soft-deleted before that can be called,
     # but by providing the force attribute, that can be bypassed.
     def hard_delete(id, force = false)
-      uri = "#{endpoint}/#{id}/had_delete"
+      uri = "#{endpoint}/#{id}/hard_delete"
       if force
         uri = "#{uri}?force=true"
       end

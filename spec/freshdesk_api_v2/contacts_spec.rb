@@ -30,6 +30,41 @@ RSpec.describe FreshdeskApiV2::Contacts do
     }.merge(overrides)
   end
 
+  context 'hard_delete' do
+    let(:contact_response) { contact_attributes(id: 1) }
+
+    it 'returns a status code of 204 without force' do
+      Excon.stub(
+        {
+          method: :delete,
+          path: '/api/v2/contacts/1/hard_delete',
+          headers: headers
+        },
+        {
+          body: contact_response.to_json,
+          status: 204
+        }
+      )
+      expect(subject.hard_delete(1).status).to eq(204)
+    end
+
+    it 'returns a status code of 204 with force' do
+      Excon.stub(
+        {
+          method: :delete,
+          path: '/api/v2/contacts/1/hard_delete',
+          headers: headers,
+          query: "force=true"
+        },
+        {
+          body: contact_response.to_json,
+          status: 204
+        }
+      )
+      expect(subject.hard_delete(1, force = true).status).to eq(204)
+    end
+  end
+
   context 'list' do
     let(:contacts) do
       [
