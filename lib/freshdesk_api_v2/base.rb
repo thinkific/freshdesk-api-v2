@@ -24,7 +24,6 @@ module FreshdeskApiV2
       validate_search_pagination!(page)
       qs = pagination_query_string(page: page)
       url = qs.length > 0 ? "search/#{endpoint}?#{qs}&query=#{query.to_query}" : "search/#{endpoint}?query=#{query.to_query}"
-      puts "FreshdeskApiV2::Base#search URL: #{url}"
       @http.get(url)
     end
 
