@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    freshdesk_api_v2 (0.1.0)
+    freshdesk_api_v2 (0.1.1)
       addressable (~> 2.5, >= 2.5.2)
       excon (~> 0.62.0)
       json (~> 1.8)
