@@ -43,9 +43,7 @@ module FreshdeskApiV2
     # but by providing the force attribute, that can be bypassed.
     def hard_delete(id, force = false)
       uri = "#{endpoint}/#{id}/hard_delete"
-      if force
-        uri = "#{uri}?force=true"
-      end
+      uri = "#{uri}?force=true" if force
       @http.delete(uri)
     end
 
